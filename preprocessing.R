@@ -1,7 +1,6 @@
 library(tidyverse)
 library(stringr)
 library(dplyr)
-library(geosphere)
 
 # read in data
 sf_airbnb_data <- read.csv("/Users/alexandercho/sf_airbnb/listings.csv", stringsAsFactors = FALSE)
@@ -32,10 +31,6 @@ sf_airbnb_data <- select(sf_airbnb_data, -bathrooms_text)
 # look for missing values
 colSums(is.na(sf_airbnb_data))
 
-# upon further inspection of a sample of listings from the original data, the high number of missing values for the ratings
-# indicates that listings are very new so they will probably not be helpful for the analysis. We'll take care of the other two as well.
-# sf_airbnb_data <- sf_airbnb_data[complete.cases(sf_airbnb_data$review_scores_rating, sf_airbnb_data$bathrooms_number, sf_airbnb_data$beds), ]
-
 # Remove non-numeric characters from the following columns and convert them to an int/num
 sf_airbnb_data$price <- as.integer(gsub("[^0-9.]", "", sf_airbnb_data$price))
 sf_airbnb_data$host_response_rate <- as.numeric(gsub("[^0-9.]", "", sf_airbnb_data$host_response_rate))
@@ -65,14 +60,21 @@ sf_airbnb_data <- sf_airbnb_data %>%
 sf_airbnb_data$host_response_time <- as.factor(sf_airbnb_data$host_response_time)
 sf_airbnb_data$room_type <- as.factor(sf_airbnb_data$room_type)
 
+# IQR, price
+price_q1 <- quantile(sf_airbnb_data$price, 0.25)
+price_q3 <- quantile(sf_airbnb_data$price, 0.75)
+price_iqr <- price_q3 - price_q1
+# outliers
+outlier_rows <- sf_airbnb_data[sf_airbnb_data$price < (price_q1 - 1.5 * price_iqr) | sf_airbnb_data$price > (price_q3 + 1.5 * price_iqr), ]
+nrow(outlier_rows)
+# final decision: remove all greater than 1000
+sf_airbnb_data <- sf_airbnb_data[sf_airbnb_data$price <= 1000, ]
+
 # run to view internal structure of dataset 
 str(sf_airbnb_data)
 
+# missingness
 colSums(is.na(sf_airbnb_data))
 
-
-
-
-
-
-
+# view df
+View(sf_airbnb_data)
