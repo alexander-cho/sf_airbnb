@@ -1,4 +1,5 @@
 library(tidyverse)
+library(tidymodels)
 library(stringr)
 library(dplyr)
 
@@ -56,10 +57,6 @@ sum(sf_airbnb_data$host_response_time == "") # 1
 sf_airbnb_data <- sf_airbnb_data %>% 
   mutate(host_response_time = ifelse(host_response_time %in% c("N/A", ""), "within an hour", host_response_time))
 
-# character variables `host_response_time` and `room_type` as factors
-sf_airbnb_data$host_response_time <- as.factor(sf_airbnb_data$host_response_time)
-sf_airbnb_data$room_type <- as.factor(sf_airbnb_data$room_type)
-
 # IQR, price
 price_q1 <- quantile(sf_airbnb_data$price, 0.25)
 price_q3 <- quantile(sf_airbnb_data$price, 0.75)
@@ -70,11 +67,28 @@ nrow(outlier_rows)
 # final decision: remove all greater than 1000
 sf_airbnb_data <- sf_airbnb_data[sf_airbnb_data$price <= 1000, ]
 
-# run to view internal structure of dataset 
-str(sf_airbnb_data)
+# new col 'number_of_days_booked'
+sf_airbnb_data$number_of_days_booked <- 365 - sf_airbnb_data$availability_365
+
+# Remove the availability_365 column
+sf_airbnb_data <- select(sf_airbnb_data, -availability_365)
 
 # missingness
 colSums(is.na(sf_airbnb_data))
 
-# view df
-View(sf_airbnb_data)
+sf_airbnb_data <- sf_airbnb_data %>%
+  mutate(neighbourhood_cleansed = case_when(
+    neighbourhood_cleansed %in% c("Seacliff", "Presidio", "Presidio Heights") ~ "Presidio",
+    neighbourhood_cleansed %in% c("Twin Peaks", "West of Twin Peaks", "Diamond Heights", "Glen Park") ~ "Twin Peaks",
+    neighbourhood_cleansed %in% c("Inner Richmond", "Outer Richmond") ~ "Richmond",
+    neighbourhood_cleansed %in% c("Crocker Amazon", "Visitacion Valley", "Excelsior", "Outer Mission") ~ "Excelsior",
+    neighbourhood_cleansed %in% c("Inner Sunset", "Outer Sunset", "Golden Gate Park") ~ "Sunset",
+    TRUE ~ neighbourhood_cleansed
+  ))
+
+# internal structure of dataset 
+str(sf_airbnb_data)
+
+table(sf_airbnb_data$neighbourhood_cleansed)
+
+write_csv(sf_airbnb_data, "sf_airbnb_clean.csv")
