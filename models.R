@@ -3,6 +3,7 @@ library(tidyverse)
 library(kknn)
 library(ranger)
 library(vip)
+library(kernlab)
 
 # read in clean data
 sf_airbnb_clean <- read_csv("sf_airbnb_clean.csv")
@@ -29,8 +30,6 @@ sf_airbnb_recipe <- recipe(price ~ ., data = sf_airbnb_train) %>%
   step_dummy(all_nominal_predictors()) %>%
   step_scale(all_numeric_predictors())
 
-str(sf_airbnb_recipe)
-
 
 # Linear Regression
 
@@ -54,7 +53,7 @@ lm_final_fit <- lm_fit %>%
   finalize_workflow(lm_workflow, .) %>%
   fit(sf_airbnb_train)
 
-# plot actual vs. predicted scores
+# plot actual vs. predicted prices
 augment(lm_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
@@ -102,7 +101,7 @@ knn_final_fit <- knn_tune_res %>%
   finalize_workflow(knn_workflow, .) %>%
   fit(sf_airbnb_train)
 
-# plot actual vs. predicted scores
+# plot actual vs. predicted prices
 augment(knn_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
@@ -152,7 +151,7 @@ rf_final_fit <- rf_tune_res %>%
   finalize_workflow(rf_workflow, .) %>%
   fit(sf_airbnb_train)
 
-# plot actual vs. predicted scores
+# plot actual vs. predicted prices
 augment(rf_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
