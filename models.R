@@ -4,6 +4,8 @@ library(kknn)
 library(ranger)
 library(vip)
 library(kernlab)
+library(xgboost)
+library(cowplot)
 
 # read in clean data
 sf_airbnb_clean <- read_csv("sf_airbnb_clean.csv")
@@ -23,8 +25,8 @@ sf_airbnb_split <- initial_split(sf_airbnb_clean, strata = "price", prop = 0.8)
 sf_airbnb_train <- training(sf_airbnb_split)
 sf_airbnb_test <- testing(sf_airbnb_split)
 
-# create 10-fold cross-validation object
-sf_airbnb_folds <- vfold_cv(sf_airbnb_train, v = 10)
+# create 5-fold cross-validation object
+sf_airbnb_folds <- vfold_cv(sf_airbnb_train, v = 5)
 
 sf_airbnb_recipe <- recipe(price ~ ., data = sf_airbnb_train) %>%
   step_dummy(all_nominal_predictors()) %>%
@@ -69,7 +71,7 @@ augment(lm_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # final linreg model
-saveRDS(lm_final_fit, file = "models/lm_model.rds")
+save(lm_final_fit, file = "models/lm_model.rda")
 
 # K-nearest neighbors
 
@@ -117,14 +119,14 @@ augment(knn_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # final knn model
-saveRDS(knn_final_fit, file = "models/knn_model.rds")
-saveRDS(knn_tune_res, file = "models/knn_tune_res.rds")
+save(knn_final_fit, file = "models/knn_model.rda")
+save(knn_tune_res, file = "models/knn_tune_res.rda")
 
 # Random Forest
 
 # specify random forest model
 rf_model <- rand_forest(mtry = tune(),
-                        trees = 1000,
+                        trees = 500,
                         min_n = tune()) %>%
   set_mode("regression") %>%
   set_engine("ranger", importance = "impurity")
@@ -169,7 +171,7 @@ augment(rf_final_fit, new_data = sf_airbnb_test) %>%
 # variable importance plot
 rf_vip <- rf_final_fit %>%
   extract_fit_parsnip() %>%
-  vip(num_features = 15) + 
+  vip(num_features = 10) + 
   labs(title = "Random forest: variable importance",
        x = "Predictors",
        y = "Importance")
@@ -177,4 +179,79 @@ rf_vip <- rf_final_fit %>%
 # save final model
 save(rf_tune_res, file = "models/rf_tune_res.rda")
 save(rf_final_fit, file = "models/rf_fit.rda")
+
+# Boosted Trees
+
+# specify boosted trees
+bt_model <- boost_tree(trees = 500,
+                       min_n = tune(),
+                       mtry = tune(),
+                       learn_rate = tune(),
+                       tree_depth = tune(),
+                       sample_size = tune(),
+                       loss_reduction = tune()) %>%
+  set_engine("xgboost") %>%
+  set_mode("regression")
+
+# specify workflow
+bt_workflow <- workflow() %>%
+  add_model(bt_model) %>%
+  add_recipe(sf_airbnb_recipe)
+
+# specify hyperparameters
+bt_grid <- grid_latin_hypercube(min_n(),
+                                finalize(mtry(), sf_airbnb_train),
+                                learn_rate(),
+                                tree_depth(),
+                                sample_size = sample_prop(),
+                                loss_reduction(),
+                                size = 30)
+
+# fit model using cross-validation and hyperparameters
+bt_tune_res <- tune_grid(bt_workflow,
+                         resamples = sf_airbnb_folds,
+                         grid = bt_grid)
+
+# plot results
+autoplot(bt_tune_res, metric = "rmse")
+
+# select the best model and fit
+bt_final_fit <- bt_tune_res %>%
+  select_best("rmse") %>%
+  finalize_workflow(bt_workflow, .) %>%
+  fit(sf_airbnb_train)
+
+# plot actual vs. predicted scores
+augment(bt_final_fit, new_data = sf_airbnb_test) %>% 
+  ggplot(aes(x = .pred, y = price)) +
+  geom_point(alpha = 0.4) +
+  geom_abline(lty = 2, color = "red") +
+  coord_cartesian(xlim = c(0, 1000),
+                  ylim = c(0, 1000)) +
+  labs(title = "Boosted trees: actual vs. predicted prices",
+       x = "Predicted prices",
+       y = "Actual prices")
+
+# calculate RMSE
+augment(bt_final_fit, new_data = sf_airbnb_test) %>%
+  rmse(truth = price, estimate = .pred)
+
+# variable importance plot
+bt_vip <- bt_final_fit %>%
+  extract_fit_parsnip() %>%
+  vip(num_features = 10) + 
+  labs(title = "Boosted trees: variable importance",
+       x = "Predictors",
+       y = "Importance")
+
+# save final model
+save(bt_tune_res, file = "models/boost_tune_res.rda")
+save(bt_final_fit, file = "models/boost_fit.rda")
+
+
+# combine variable importance plots
+plot_grid(bt_vip, rf_vip, labels = c("Boosted Trees", "Random Forest"))
+
+
+
 
