@@ -56,7 +56,7 @@ lm_final_fit <- lm_fit %>%
   fit(sf_airbnb_train)
 
 # plot actual vs. predicted prices
-augment(lm_final_fit, new_data = sf_airbnb_test) %>% 
+lm_actual_vs_predicted <- augment(lm_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
   geom_abline(lty = 2, color = "red") +
@@ -67,7 +67,7 @@ augment(lm_final_fit, new_data = sf_airbnb_test) %>%
        y = "Actual price")
 
 # calculate RMSE
-augment(lm_final_fit, new_data = sf_airbnb_test) %>%
+lm_rmse <- augment(lm_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # final linreg model
@@ -95,7 +95,7 @@ knn_tune_res <- tune_grid(knn_workflow,
                           grid = neighbors_grid)
 
 # plot results
-autoplot(knn_tune_res)
+knn_tuning_results <- autoplot(knn_tune_res)
 
 # select the best model and fit
 knn_final_fit <- knn_tune_res %>%
@@ -104,7 +104,7 @@ knn_final_fit <- knn_tune_res %>%
   fit(sf_airbnb_train)
 
 # plot actual vs. predicted prices
-augment(knn_final_fit, new_data = sf_airbnb_test) %>% 
+knn_actual_vs_predicted <- augment(knn_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
   geom_abline(lty = 2, color = "red") +
@@ -115,7 +115,7 @@ augment(knn_final_fit, new_data = sf_airbnb_test) %>%
        y = "Actual price")
 
 # calculate RMSE
-augment(knn_final_fit, new_data = sf_airbnb_test) %>%
+knn_rmse <- augment(knn_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # final knn model
@@ -145,7 +145,7 @@ rf_tune_res <- tune_grid(rf_workflow,
                          ))
 
 # plot results
-autoplot(rf_tune_res, metric = "rmse")
+rf_tuning_results <- autoplot(rf_tune_res, metric = "rmse")
 
 # select the best model and fit
 rf_final_fit <- rf_tune_res %>%
@@ -154,7 +154,7 @@ rf_final_fit <- rf_tune_res %>%
   fit(sf_airbnb_train)
 
 # plot actual vs. predicted prices
-augment(rf_final_fit, new_data = sf_airbnb_test) %>% 
+rf_actual_vs_predicted <- augment(rf_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
   geom_abline(lty = 2, color = "red") +
@@ -165,7 +165,7 @@ augment(rf_final_fit, new_data = sf_airbnb_test) %>%
        y = "Actual price")
 
 # calculate RMSE
-augment(rf_final_fit, new_data = sf_airbnb_test) %>%
+rf_rmse <- augment(rf_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # variable importance plot
@@ -213,7 +213,7 @@ bt_tune_res <- tune_grid(bt_workflow,
                          grid = bt_grid)
 
 # plot results
-autoplot(bt_tune_res, metric = "rmse")
+bt_tuning_results <- autoplot(bt_tune_res, metric = "rmse")
 
 # select the best model and fit
 bt_final_fit <- bt_tune_res %>%
@@ -222,7 +222,7 @@ bt_final_fit <- bt_tune_res %>%
   fit(sf_airbnb_train)
 
 # plot actual vs. predicted scores
-augment(bt_final_fit, new_data = sf_airbnb_test) %>% 
+bt_actual_vs_predicted <- augment(bt_final_fit, new_data = sf_airbnb_test) %>% 
   ggplot(aes(x = .pred, y = price)) +
   geom_point(alpha = 0.4) +
   geom_abline(lty = 2, color = "red") +
@@ -233,7 +233,7 @@ augment(bt_final_fit, new_data = sf_airbnb_test) %>%
        y = "Actual prices")
 
 # calculate RMSE
-augment(bt_final_fit, new_data = sf_airbnb_test) %>%
+bt_rmse <- augment(bt_final_fit, new_data = sf_airbnb_test) %>%
   rmse(truth = price, estimate = .pred)
 
 # variable importance plot
@@ -250,8 +250,17 @@ save(bt_final_fit, file = "models/boost_fit.rda")
 
 
 # combine variable importance plots
-plot_grid(bt_vip, rf_vip, labels = c("Boosted Trees", "Random Forest"))
+vip_plot <- plot_grid(bt_vip, rf_vip, labels = c("Boosted Trees", "Random Forest"))
 
+model_comparison <- tibble(
+  Model = c("Linear Regression", "KNN", "Random Forest", "Boosted Trees"),
+  RMSE = c(lm_rmse$.estimate, knn_rmse$.estimate, rf_rmse$.estimate, bt_rmse$.estimate)
+)
 
-
+# visualize rmse values
+rmse_comparison <- ggplot(model_comparison, aes(x = Model, y = RMSE)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Comparison of RMSE for Different Models",
+       x = "Model",
+       y = "RMSE")
 
