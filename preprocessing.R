@@ -92,3 +92,5 @@ str(sf_airbnb_data)
 table(sf_airbnb_data$neighbourhood_cleansed)
 
 write_csv(sf_airbnb_data, "sf_airbnb_clean.csv")
+
+str(sf_airbnb_clean)
