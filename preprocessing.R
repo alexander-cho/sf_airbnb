@@ -3,6 +3,7 @@ library(tidymodels)
 library(stringr)
 library(dplyr)
 
+
 # read in data
 sf_airbnb_data <- read.csv("/Users/alexandercho/sf_airbnb/listings.csv", stringsAsFactors = FALSE)
 sapply(sf_airbnb_data, function(col) is.integer(col))
@@ -93,4 +94,5 @@ table(sf_airbnb_data$neighbourhood_cleansed)
 
 write_csv(sf_airbnb_data, "sf_airbnb_clean.csv")
 
-str(sf_airbnb_clean)
+unique(sf_airbnb_data$bathrooms_number)
+# 1.5 bathrooms is showing up as 1.285928...

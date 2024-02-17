@@ -1,6 +1,6 @@
 library(shiny)
 
-# Define UI for application that draws a histogram
+# Define UI for application 
 ui <- fluidPage(
 
     # Application title
@@ -10,7 +10,7 @@ ui <- fluidPage(
                 label = "Select a neighborhood:",
                 choices = c("Choose a neighborhood", unique(sf_airbnb_clean$neighbourhood_cleansed)),
                 selected = "Choose a neighborhood"),
-    # Dropdown selection bar for neighborhoods
+    # Dropdown selection bar for number of bathrooms
     selectInput("bathrooms", 
                 label = "Select number of bathrooms:",
                 choices = c("Choose a neighborhood", unique(sf_airbnb_clean$bathrooms_number)),
@@ -18,7 +18,7 @@ ui <- fluidPage(
     
 )
 
-# Define server logic required to draw a histogram
+
 server <- function(input, output) {
 
     output$distPlot <- renderPlot({
