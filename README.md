@@ -4,6 +4,7 @@
 #### cols
 raw data
 
+PRICE
 neighbourhood_cleansed
 room_type
 accommodates
