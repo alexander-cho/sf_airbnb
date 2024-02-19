@@ -6,6 +6,7 @@ library(dplyr)
 
 # read in data
 sf_airbnb_data <- read.csv("/Users/alexandercho/sf_airbnb/listings.csv", stringsAsFactors = FALSE)
+sf_airbnb_raw <- read.csv("/Users/alexandercho/sf_airbnb/listings.csv", stringsAsFactors = FALSE)
 sapply(sf_airbnb_data, function(col) is.integer(col))
 
 # Select only the specified columns
@@ -96,3 +97,7 @@ write_csv(sf_airbnb_data, "sf_airbnb_clean.csv")
 
 unique(sf_airbnb_data$bathrooms_number)
 # 1.5 bathrooms is showing up as 1.285928...
+
+unique(sf_airbnb_clean$neighbourhood_cleansed)
+
+

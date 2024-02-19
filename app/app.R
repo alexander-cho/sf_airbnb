@@ -13,8 +13,14 @@ ui <- fluidPage(
     # Dropdown selection bar for number of bathrooms
     selectInput("bathrooms", 
                 label = "Select number of bathrooms:",
-                choices = c("Choose a neighborhood", unique(sf_airbnb_clean$bathrooms_number)),
-                selected = "Bathrooms")
+                choices = c("Choose number of bathrooms", unique(sf_airbnb_clean$bathrooms_number)),
+                selected = "Bathrooms"),
+    # Dropdown selection bar for number of bedrooms
+    selectInput("bedrooms", 
+                label = "Select number of bedrooms:",
+                choices = c("Choose number of bedrooms", unique(sf_airbnb_clean$beds)),
+                selected = "Bedrooms"), 
+    # Dropdown selection bar for number of bathrooms
     
 )
 
